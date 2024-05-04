@@ -1,0 +1,59 @@
+(* Starting file for the server *)
+
+import lists
+import declassifyutil
+
+
+let 
+  fun server db = 
+    let 
+        val newMsg = receive [hn ("NEWPROFILE", newMsg) => newMsg]
+        val ((lev, name, year, gender, interests), agent, pid) = newMsg
+        val profile = (lev, name, year, gender, interests)   
+        val _ = print "receive a new profile!"
+        val _ =print profile            
+
+       
+        val _ = map (fn (dbprofile, dbagent, dbpid) => 
+            let  
+                val match1 = let pini authority val out = agent dbprofile in out end  
+                val match2 = let pini authority val out = dbagent profile in out end  
+
+                val (bool11, _) = match1
+                val bool1 = declassifydeep(bool11, authority, `{}`)
+                val (bool22, _) = match2
+                val bool2 = declassifydeep(bool22, authority, `{}`)
+
+                in if bool1 andalso bool2 then 
+                    let 
+                        val _ = print "Finding a new match!"
+                        val profile1 = let pini authority   
+                                            val (_, profile) = match1  
+                                            in profile end              
+                        val _ = send (dbpid, ("NEWMATCH", profile1))
+                        val profile2 = let pini authority 
+                                            val (_, profile) = match2
+                                            in profile end                   
+                        val _ = send (pid, ("NEWMATCH", profile2))
+                    in () end 
+                    else ()
+            end) db  
+
+        in server (newMsg::db)
+    end
+
+    
+
+    fun main () =       
+        let val _ = _setProcessDebuggingName "server"
+            val thisNode = node (self ())
+            val _ = printString ("Running node with identifier: " ^ thisNode)
+            val _ = register ("datingServer", spawn (fn () => server []), authority)
+        in  (* TODO: Feel free to comment out the next line
+                     while you develop your solution and work on a few 
+                     custom clients;  *)
+            (*send (whereis ("@dispatcher", "dispatcher"), ("DISPATCH", thisNode)); *)
+            ()
+        end
+in main ()
+end

@@ -1,0 +1,54 @@
+(* Placeholder for the dating-client. Note that in order to communicate 
+   with your server you will need to create the corresponding trustmap *)
+   
+import lists
+import declassifyutil
+let
+   fun receiveData ()=
+         let val _ = receive [  hn ("NEWMATCH", profile )
+                                => print profile
+                             ]
+         in receiveData ()
+         end
+   val lev = `{Charlie}`
+   val name ="Charlie" raisedTo  lev
+   val year = 2001 raisedTo  lev
+   val gender = false raisedTo lev
+   val interest = ["skate","tennis","read","drive","film","sing","guitar","running","Cooking","Painting","Drawing","Hiking","Photography","Sculpting","Gardening","Birdwatching","Fishing","Knitting","Crocheting","Sewing","Yoga","Meditation","Dancing"]
+   val interests = ["skate","tennis","read","drive","film","sing","guitar","running","Cooking","Painting","Drawing","Hiking","Photography","Sculpting","Gardening","Birdwatching","Fishing","Knitting","Crocheting","Sewing","Yoga","Meditation","Dancing"] raisedTo lev
+   val profile = (lev,name,year,gender,interests)
+   val pid = self ()
+   val _ = register("client3",spawn receiveData, authority)
+   
+   fun containsElement(_, []) = false
+      | containsElement(x, y::ys) =
+         if x = y then true
+         else containsElement(x, ys)
+
+   fun compareLists([], _) = (false, [])
+     | compareLists(x::xs, ys) =
+         let
+            val (contains, common) = compareLists(xs, ys)
+         in
+            if containsElement(x, ys) then (true, x::common)
+            else (contains, common)
+         end
+   
+   fun agent recievedProfile = 
+      let val (lev1, _, _, _, receivedInterest) = recievedProfile
+         val (result, commonInterest) = compareLists(interest, receivedInterest)
+         val agent_result = (declassify(result, authority, lev1), declassifydeep(commonInterest, authority, lev1))
+      in agent_result
+      end
+         
+   val data = (profile,agent,pid)
+   val sendMessege = ("NEWPROFILE", data)
+   fun sendNewProfile () =
+   let     val _ = print "waiting to receive!"
+           val _ = send ((whereis ("@server", "datingServer"),sendMessege))
+   in receiveData()
+   end
+
+in
+sendNewProfile ()
+end
